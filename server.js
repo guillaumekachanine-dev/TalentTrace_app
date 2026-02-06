@@ -53,18 +53,52 @@ async function extractTextFromTXT(filePath) {
     return fs.readFileSync(filePath, 'utf-8');
 }
 
+function looksLikePdf(filePath) {
+    try {
+        const fd = fs.openSync(filePath, 'r');
+        const buffer = Buffer.alloc(4);
+        fs.readSync(fd, buffer, 0, 4, 0);
+        fs.closeSync(fd);
+        return buffer.toString() === '%PDF';
+    } catch {
+        return false;
+    }
+}
+
 // Main extraction function
-async function extractTextFromCV(filePath) {
+async function extractTextFromCV(filePath, mimeType = '') {
     // Si pas d'extension (multer crée des fichiers sans extension), essayer par type MIME
     const ext = path.extname(filePath).toLowerCase();
     const fileName = path.basename(filePath);
 
     console.log(`Extracting from: ${filePath}, ext: ${ext}, name: ${fileName}`);
 
+    const normalizedMime = (mimeType || '').toLowerCase();
+
+    if (normalizedMime.includes('pdf')) {
+        const text = await extractTextFromPDF(filePath);
+        if (!text || text.trim().length < 30) {
+            throw new Error('Le PDF ne contient pas de texte exploitable (scan ou image).');
+        }
+        return text;
+    }
+
+    if (normalizedMime.includes('word') || normalizedMime.includes('officedocument')) {
+        return await extractTextFromDOCX(filePath);
+    }
+
+    if (normalizedMime.includes('text')) {
+        return await extractTextFromTXT(filePath);
+    }
+
     // Essayer PDF d'abord (par extension ou par défaut pour les fichiers sans ext)
     if (ext === '.pdf') {
         try {
-            return await extractTextFromPDF(filePath);
+            const text = await extractTextFromPDF(filePath);
+            if (!text || text.trim().length < 30) {
+                throw new Error('Le PDF ne contient pas de texte exploitable (scan ou image).');
+            }
+            return text;
         } catch (e) {
             console.log('PDF extraction failed, trying others...');
         }
@@ -80,7 +114,7 @@ async function extractTextFromCV(filePath) {
     }
 
     // Essayer TXT
-    if (ext === '.txt' || ext === '') {
+    if (ext === '.txt') {
         try {
             return await extractTextFromTXT(filePath);
         } catch (e) {
@@ -88,9 +122,29 @@ async function extractTextFromCV(filePath) {
         }
     }
 
+    // Si pas d'extension, tenter PDF puis DOCX puis TXT
+    if (ext === '') {
+        if (looksLikePdf(filePath)) {
+            const text = await extractTextFromPDF(filePath);
+            if (!text || text.trim().length < 30) {
+                throw new Error('Le PDF ne contient pas de texte exploitable (scan ou image).');
+            }
+            return text;
+        }
+        try {
+            return await extractTextFromDOCX(filePath);
+        } catch (e) {
+            return await extractTextFromTXT(filePath);
+        }
+    }
+
     // Si aucun format n'a marché, essayer tous dans l'ordre
     try {
-        return await extractTextFromPDF(filePath);
+        const text = await extractTextFromPDF(filePath);
+        if (!text || text.trim().length < 30) {
+            throw new Error('Le PDF ne contient pas de texte exploitable (scan ou image).');
+        }
+        return text;
     } catch (e1) {
         try {
             return await extractTextFromDOCX(filePath);
@@ -309,7 +363,7 @@ app.post('/api/analyze', upload.single('cv'), async (req, res) => {
         const jobData = req.body.job ? JSON.parse(req.body.job) : null;
 
         // Extract text from CV
-        const cvText = await extractTextFromCV(req.file.path);
+        const cvText = await extractTextFromCV(req.file.path, req.file.mimetype);
 
         // Parse CV
         const candidateData = await parseCV(cvText);
