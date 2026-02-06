@@ -105,17 +105,8 @@
             display: flex;
             flex-direction: column;
             flex: 1;
-            gap: 10px;
+            gap: 14px;
             max-width: 66%;
-            justify-content: center;
-        }
-
-        .header-brand-logo {
-            height: 170px;
-            width: auto;
-            max-width: 100%;
-            object-fit: contain;
-            display: block;
         }
 
         .header-right-logo {
@@ -172,6 +163,48 @@
             color: white;
             transform: translateY(-1px);
             box-shadow: var(--shadow-md);
+        }
+
+        .header-left h1 {
+            color: var(--primary-dark);
+            font-size: 38px;
+            font-weight: 800;
+            margin-bottom: 2px;
+            letter-spacing: -1px;
+            line-height: 1.06;
+        }
+
+        .brand-title {
+            font-family: 'Sora', 'Manrope', sans-serif;
+            font-weight: 800;
+            letter-spacing: -0.8px;
+        }
+
+        .subtitle {
+            color: var(--gray-500);
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .header-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 2px;
+        }
+
+        .header-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 12px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.88);
+            border: 1px solid rgba(0, 102, 204, 0.18);
+            color: var(--gray-700);
+            font-size: 12px;
+            font-weight: 700;
+            box-shadow: var(--shadow-sm);
         }
 
         .section-title {
@@ -1303,9 +1336,8 @@
                 max-width: 100%;
             }
 
-            .header-brand-logo {
-                height: 130px;
-                margin: 0 auto;
+            .header-left h1 {
+                font-size: 30px;
             }
 
             .header-right {
@@ -1366,7 +1398,13 @@
         <header>
             <div class="header-content">
                 <div class="header-left">
-                    <img class="header-brand-logo" src="/talenttrace-logo-v3.png" alt="TalentTrace">
+                    <h1 class="brand-title">TalentTrace</h1>
+                    <div class="subtitle">Reveal the talent behind the text</div>
+                    <div class="header-pills">
+                        <div class="header-pill">Matching IA</div>
+                        <div class="header-pill">Suivi pipeline recrutement</div>
+                        <div class="header-pill">Exports Word / PDF / CSV</div>
+                    </div>
                 </div>
                 <div class="header-right">
                     <img class="header-right-logo" src="/experis-logo.png" alt="EXPERIS">
