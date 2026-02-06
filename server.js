@@ -18,7 +18,7 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const UPLOAD_DIR = path.join(__dirname, 'uploads');
+const UPLOAD_DIR = process.env.VERCEL ? '/tmp/uploads' : path.join(__dirname, 'uploads');
 
 // Ensure upload directory exists
 if (!fs.existsSync(UPLOAD_DIR)) {
@@ -299,6 +299,9 @@ Retourne UNIQUEMENT le JSON. Pas de texte avant ou après.`;
 // API Routes
 app.post('/api/analyze', upload.single('cv'), async (req, res) => {
     try {
+        if (!process.env.ANTHROPIC_API_KEY) {
+            return res.status(500).json({ error: 'ANTHROPIC_API_KEY manquante' });
+        }
         if (!req.file) {
             return res.status(400).json({ error: 'CV requis' });
         }
@@ -339,6 +342,9 @@ app.post('/api/analyze', upload.single('cv'), async (req, res) => {
 
 app.post('/api/analyze-url', async (req, res) => {
     try {
+        if (!process.env.ANTHROPIC_API_KEY) {
+            return res.status(500).json({ error: 'ANTHROPIC_API_KEY manquante' });
+        }
         const { url, job } = req.body || {};
         if (!url) {
             return res.status(400).json({ error: 'URL du CV requise' });
