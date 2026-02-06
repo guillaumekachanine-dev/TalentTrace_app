@@ -1,0 +1,102 @@
+MARC DUBOIS
+Email: marc.dubois@email.com
+Téléphone: +33 6 12 34 56 78
+Localisation: Sophia-Antipolis, Provence-Alpes-Côte d'Azur
+
+PROFESSIONNEL EXPÉRIMENTÉ EN DÉVELOPPEMENT PYTHON ET ARCHITECTURES CLOUD
+Spécialiste Backend Python avec 7 ans d'expérience. Expert en développement d'APIs REST,
+microservices et architectures cloud scalables. Passionné par l'excellence du code et l'optimisation.
+
+---
+COMPÉTENCES PRINCIPALES
+
+Backend & Frameworks
+- Python (expert) : Django, FastAPI, Celery, SQLAlchemy
+- API Development : REST, GraphQL, OpenAPI/Swagger
+- Architecture : Microservices, Clean Code, Design Patterns
+
+Cloud & DevOps
+- AWS : EC2, S3, RDS, Lambda, SQS, ECS
+- Docker & Kubernetes
+- CI/CD : GitHub Actions, Jenkins
+- Infrastructure as Code : Terraform
+
+Databases & Tools
+- PostgreSQL, MongoDB, Redis
+- Git, Linux, Nginx
+- Testing : pytest, Unit & Integration Tests
+
+Langues
+- Français (natif)
+- Anglais (courant - TOEIC 850)
+
+---
+EXPÉRIENCE PROFESSIONNELLE
+
+DÉVELOPPEUR PYTHON SENIOR | Acme Tech Solutions | 2021 - Aujourd'hui
+Architecte et développeur principal pour plateforme de gestion cloud (SaaS).
+- Conçu et implémenté microservices Python/FastAPI pour traitement 100k req/sec
+- Migration legacy Django → FastAPI : 60% gain de performance
+- Leadership technique : mentoring 3 développeurs junior
+- Mise en place infrastructure Kubernetes + AWS
+
+DÉVELOPPEUR PYTHON CONFIRMÉ | TechVenture SARL | 2018 - 2021
+Backend developer pour plateforme e-commerce Python/Django.
+- Développement API REST complète (80+ endpoints)
+- Implémentation système paiement (Stripe integration)
+- Optimisation requêtes DB : -70% temps réponse
+- Gestion base données 2GB+ PostgreSQL
+
+DÉVELOPPEUR PYTHON JUNIOR | StartupXYZ | 2017 - 2018
+Premiers pas dans développement Python et web.
+- Développement fonctionnalités Django
+- Tests unitaires et intégration
+- Particpation architecture MVP
+
+---
+FORMATION
+
+MASTER INFORMATIQUE - Spécialité Systèmes et Réseaux
+Université Nice Sophia-Antipolis | 2017
+Mention Bien
+
+LICENCE INFORMATIQUE
+Université Pierre et Marie Curie, Paris | 2015
+
+---
+CERTIFICATIONS & FORMATIONS COMPLÉMENTAIRES
+
+AWS Certified Solutions Architect - Associate | 2022
+Kubernetes Administration (Linux Academy) | 2021
+Clean Code & Design Patterns (Udemy) | 2020
+
+---
+PROJETS NOTABLES
+
+Système de Monitoring Cloud (2022)
+Plateforme Python de monitoring temps réel pour 500+ serveurs.
+Stack : FastAPI, PostgreSQL, React, AWS
+
+Migration Microservices (2021)
+Refactoring monolith Django vers 5 microservices Python/FastAPI.
+Résultat : Performance x3, Scalability x10
+
+API Gateway Custom (2020)
+Développement gateway API custom en Python pour router 1M+ requêtes/jour.
+
+---
+INTÉRÊTS & ACTIVITÉS
+
+- Open Source : contributeur sur projets Django, FastAPI
+- Tech Blog : articles sur Python et architecture cloud
+- Conférences : speaker PyCon France 2022, 2023
+- Sport : trail running, escalade
+
+---
+À PROPOS
+
+Développeur passionné par la création de solutions performantes et scalables.
+Spécialiste Python avec expertise cloud AWS. Excellent communicateur et mentor.
+Actuellement intéressé par architectures décentralisées et blockchain.
+
+Reference disponible sur demande.
