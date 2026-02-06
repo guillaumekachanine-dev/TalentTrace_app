@@ -2188,7 +2188,7 @@
                 currentAnalysis = {
                     result,
                     job: selectedJob,
-                    fileName: (() => {
+                    filename: (() => {
                         if (urlValue) {
                             try {
                                 const url = new URL(urlValue);
@@ -2482,7 +2482,7 @@
                                 <div>
                                     <div class="history-name">${candidate.firstName} ${candidate.lastName}</div>
                                     <div class="history-meta">
-                                        ${item.fileName} • ${item.job.title}
+                                        ${item.filename} • ${item.job.title}
                                     </div>
                                     <div class="history-date">${date.toLocaleDateString('fr-FR')} à ${date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
                                 </div>
@@ -2514,7 +2514,7 @@
                             <div>
                                 <div class="history-name">${candidate.firstName} ${candidate.lastName}</div>
                                 <div class="history-meta">
-                                    ${item.fileName} ${item.job ? '• ' + item.job.title : '• Analyse seule'}
+                                    ${item.filename} ${item.job ? '• ' + item.job.title : '• Analyse seule'}
                                 </div>
                                 <div class="history-date">${date.toLocaleDateString('fr-FR')} à ${date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
                             </div>
@@ -2550,7 +2550,7 @@
                     `${candidate.firstName || ''} ${candidate.lastName || ''}`.trim(),
                     candidate.email || '',
                     candidate.phone || '',
-                    item.fileName || '',
+                    item.filename || '',
                     item.job ? item.job.title : 'Analyse seule',
                     typeof matching.score === 'number' ? matching.score : '',
                     dateStr ? new Date(dateStr).toLocaleString('fr-FR') : ''
