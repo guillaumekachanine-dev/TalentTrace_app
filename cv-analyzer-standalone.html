@@ -182,6 +182,28 @@
             margin-bottom: 16px;
         }
 
+        .history-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .history-cta {
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--gray-300);
+            background: white;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--gray-700);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .history-cta:hover {
+            background: var(--gray-50);
+        }
+
         .tracking-table {
             width: 100%;
             border-collapse: collapse;
@@ -220,6 +242,74 @@
 
         .tracking-controls.with-comment {
             grid-template-columns: 1.2fr 1.2fr 1fr 1.6fr;
+        }
+
+        .tracking-filters {
+            display: grid;
+            grid-template-columns: 1.5fr 1.2fr;
+            gap: 16px;
+            margin: 20px 0 12px;
+            padding: 12px;
+            border-radius: 12px;
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+        }
+
+        .timeline {
+            display: grid;
+            gap: 16px;
+        }
+
+        .timeline-header {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .timeline-header .name {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+
+        .timeline-header .meta {
+            font-size: 13px;
+            color: var(--gray-600);
+        }
+
+        .timeline-steps {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .timeline-step {
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid var(--gray-200);
+            background: white;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--gray-600);
+        }
+
+        .timeline-step.active {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: rgba(34, 90, 255, 0.08);
+        }
+
+        .timeline-step.completed {
+            border-color: var(--green-500);
+            color: var(--green-700);
+            background: rgba(0, 167, 111, 0.1);
+        }
+
+        .timeline-step.danger {
+            border-color: var(--red-500);
+            color: var(--red-700);
+            background: rgba(220, 38, 38, 0.1);
         }
 
         .report-embed {
@@ -1129,6 +1219,21 @@
             .job-item-actions button {
                 flex: 1;
             }
+
+            .tracking-controls,
+            .tracking-controls.with-comment,
+            .tracking-filters {
+                grid-template-columns: 1fr;
+            }
+
+            .timeline-steps {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .history-actions {
+                flex-direction: column;
+                align-items: flex-end;
+            }
         }
     </style>
 </head>
@@ -1351,6 +1456,19 @@
                 </div>
                 <button onclick="addTrackingItem()">➕ Ajouter au suivi</button>
 
+                <div class="tracking-filters">
+                    <div class="form-group">
+                        <label>Filtrer par candidat</label>
+                        <input type="text" id="trackingFilterCandidate" placeholder="Ex: Martin" oninput="updateTrackingList()">
+                    </div>
+                    <div class="form-group">
+                        <label>Filtrer par offre</label>
+                        <select id="trackingFilterJob" onchange="updateTrackingList()">
+                            <option value="">Toutes les offres</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div style="margin-top: 20px;">
                     <table class="tracking-table">
                         <thead>
@@ -1506,6 +1624,17 @@
         </div>
     </div>
 
+    <!-- Modal Timeline -->
+    <div class="modal" id="timelineModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🧭 Timeline de recrutement</h3>
+                <button class="modal-close" onclick="closeModal('timelineModal')">✕</button>
+            </div>
+            <div id="timelineContent" class="timeline"></div>
+        </div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/7.8.2/docx.min.js"></script>
@@ -1520,6 +1649,7 @@
         let jobs = [];
         let history = [];
         let tracking = [];
+        const trackingSteps = ['KO recrutement', 'CV sent', 'Interview', 'Win', 'Lost'];
         let currentEditJobId = null;
         let currentAnalysis = null;
         let salesforceConfig = {
@@ -1539,6 +1669,11 @@
             if (savedHistory) history = JSON.parse(savedHistory);
             if (savedTracking) tracking = JSON.parse(savedTracking);
             if (savedSalesforce) salesforceConfig = JSON.parse(savedSalesforce);
+
+            jobs = jobs.map(job => ({
+                ...job,
+                salesforce_id: job.salesforce_id ?? job.salesforceId ?? ''
+            }));
 
             updateJobList();
             updateJobSelects();
@@ -1585,6 +1720,11 @@
                 jobs = jobsRes.data || [];
                 history = historyRes.data || [];
                 tracking = trackingRes.data || [];
+
+                jobs = jobs.map(job => ({
+                    ...job,
+                    salesforce_id: job.salesforce_id ?? job.salesforceId ?? ''
+                }));
                 if (salesforceRes.data) {
                     salesforceConfig.instance = salesforceRes.data.instance || salesforceConfig.instance;
                     salesforceConfig.token = salesforceRes.data.token || '';
@@ -1753,7 +1893,7 @@
                 skills: skills.split(',').map(s => s.trim()).filter(s => s),
                 location,
                 description,
-                salesforceId,
+                salesforce_id: salesforceId,
                 id: Date.now().toString(),
                 createdat: new Date().toISOString()
             };
@@ -1794,7 +1934,7 @@
                     <div class="job-item-content">
                         <div class="job-item-title">
                             ${job.title}
-                            ${job.salesforceId ? '<span class="salesforce-badge">Salesforce</span>' : ''}
+                            ${job.salesforce_id ? '<span class="salesforce-badge">Salesforce</span>' : ''}
                         </div>
                         <div class="job-item-meta">
                             ${job.domain} • ${job.level} ${job.location ? '• ' + job.location : ''} ${job.recruiter ? '• Recruteuse: ' + job.recruiter : ''}
@@ -1835,14 +1975,17 @@
         function updateTrackingSelects() {
             const candidateSelect = document.getElementById('trackingCandidate');
             const jobSelect = document.getElementById('trackingJob');
+            const filterJobSelect = document.getElementById('trackingFilterJob');
 
             if (!candidateSelect || !jobSelect) return;
 
             const currentCandidate = candidateSelect.value;
             const currentJob = jobSelect.value;
+            const currentFilterJob = filterJobSelect ? filterJobSelect.value : '';
 
             candidateSelect.innerHTML = '<option value="">Sélectionner un candidat</option>';
             jobSelect.innerHTML = '<option value="">Aucune offre</option>';
+            if (filterJobSelect) filterJobSelect.innerHTML = '<option value="">Toutes les offres</option>';
 
             history.forEach(item => {
                 const candidate = item.result?.candidate;
@@ -1858,11 +2001,18 @@
                 option.value = job.id;
                 option.textContent = `${job.title} - ${job.domain}`;
                 jobSelect.appendChild(option);
+
+                if (filterJobSelect) {
+                    const filterOption = document.createElement('option');
+                    filterOption.value = job.id;
+                    filterOption.textContent = `${job.title} - ${job.domain}`;
+                    filterJobSelect.appendChild(filterOption);
+                }
             });
 
             if (currentCandidate) candidateSelect.value = currentCandidate;
             if (currentJob) jobSelect.value = currentJob;
-
+            if (filterJobSelect && currentFilterJob) filterJobSelect.value = currentFilterJob;
         }
 
         function addTrackingItem() {
@@ -1911,6 +2061,18 @@
             showAlert('✅ Candidat ajouté au suivi', 'success');
         }
 
+        function getFilteredTracking() {
+            const candidateFilter = document.getElementById('trackingFilterCandidate')?.value.trim().toLowerCase();
+            const jobFilter = document.getElementById('trackingFilterJob')?.value;
+
+            return tracking.filter(item => {
+                const name = (item.candidateName || '').toLowerCase();
+                const matchesCandidate = !candidateFilter || name.includes(candidateFilter);
+                const matchesJob = !jobFilter || item.jobId === jobFilter;
+                return matchesCandidate && matchesJob;
+            });
+        }
+
         function updateTrackingList() {
             const container = document.getElementById('trackingList');
             if (!container) return;
@@ -1930,7 +2092,24 @@
                 return;
             }
 
-            container.innerHTML = tracking.map(item => {
+            const filtered = getFilteredTracking();
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">🔍</div>
+                                <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">Aucun résultat</div>
+                                <div style="font-size: 14px;">Ajustez les filtres pour voir des candidats</div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            container.innerHTML = filtered.map(item => {
                 const job = item.jobId ? jobs.find(j => j.id === item.jobId) : null;
                 const jobTitle = job ? job.title : (item.jobTitle || 'Aucune');
 
@@ -1953,6 +2132,7 @@
                             <a class="link-btn" href="https://salesforce.com" target="_blank" rel="noopener" style="margin-right: 8px;">
                                 📝 CR entretien Salesforce
                             </a>
+                            <button class="icon-btn" onclick="openTrackingTimeline('${item.id}')" title="Voir la timeline">🧭</button>
                             <button class="icon-btn danger" onclick="removeTrackingItem('${item.id}')" title="Retirer du suivi">🗑️</button>
                         </td>
                     </tr>
@@ -1978,13 +2158,55 @@
             updateSalesforceReport();
         }
 
+        function openTrackingTimeline(itemId) {
+            const item = tracking.find(t => t.id === itemId);
+            if (!item) return;
+
+            const job = item.jobId ? jobs.find(j => j.id === item.jobId) : null;
+            const jobTitle = job ? job.title : (item.jobTitle || 'Aucune');
+            const status = item.status || '';
+            const statusIndex = trackingSteps.indexOf(status);
+
+            const stepsHtml = trackingSteps.map((step, index) => {
+                const isCurrent = index === statusIndex;
+                const isCompleted = statusIndex > -1 && index < statusIndex && !['KO recrutement', 'Lost'].includes(status);
+                const isDanger = isCurrent && (status === 'KO recrutement' || status === 'Lost');
+                const classes = [
+                    'timeline-step',
+                    isCurrent ? 'active' : '',
+                    isCompleted ? 'completed' : '',
+                    isDanger ? 'danger' : ''
+                ].filter(Boolean).join(' ');
+                return `<div class="${classes}">${step}</div>`;
+            }).join('');
+
+            const meta = [
+                jobTitle ? `Offre: ${jobTitle}` : 'Offre: Aucune',
+                item.score !== null ? `Score: ${item.score}%` : 'Score: —',
+                status ? `État: ${status}` : 'État: —'
+            ].join(' • ');
+
+            const content = `
+                <div class="timeline-header">
+                    <div class="name">${item.candidateName}</div>
+                    <div class="meta">${meta}</div>
+                    ${item.comment ? `<div class="meta">Commentaire: ${item.comment}</div>` : ''}
+                </div>
+                <div class="timeline-steps">${stepsHtml}</div>
+            `;
+
+            const container = document.getElementById('timelineContent');
+            if (container) container.innerHTML = content;
+            openModal('timelineModal');
+        }
+
         function updateSalesforceReport() {
             const report = document.getElementById('salesforceReport');
             if (!report) return;
             if (report.dataset.embed === 'true') return;
 
             const totalJobs = jobs.length;
-            const salesforceJobs = jobs.filter(j => j.salesforceId).length;
+            const salesforceJobs = jobs.filter(j => j.salesforce_id).length;
             const totalTracking = tracking.length;
             const wins = tracking.filter(t => t.status === 'Win').length;
             const lost = tracking.filter(t => t.status === 'Lost').length;
@@ -2022,7 +2244,7 @@
             document.getElementById('editJobSkills').value = job.skills.join(', ');
             document.getElementById('editJobLocation').value = job.location || '';
             document.getElementById('editJobDescription').value = job.description || '';
-            document.getElementById('editJobSalesforceId').value = job.salesforceId || '';
+            document.getElementById('editJobSalesforceId').value = job.salesforce_id || '';
             
             openModal('editJobModal');
         }
@@ -2048,7 +2270,7 @@
             job.skills = skills.split(',').map(s => s.trim()).filter(s => s);
             job.location = document.getElementById('editJobLocation').value.trim();
             job.description = document.getElementById('editJobDescription').value.trim();
-            job.salesforceId = document.getElementById('editJobSalesforceId').value.trim();
+            job.salesforce_id = document.getElementById('editJobSalesforceId').value.trim();
             
             saveData();
             updateJobList();
@@ -2335,7 +2557,7 @@
                     </button>
             `;
 
-            if (salesforceConfig.token && job && job.salesforceId) {
+            if (salesforceConfig.token && job && job.salesforce_id) {
                 html += `
                     <button class="salesforce-btn" onclick="uploadToSalesforce()">
                         ☁️ Envoyer à Salesforce
@@ -2419,7 +2641,7 @@
 
             const { result, job } = currentAnalysis;
             
-            if (!job || !job.salesforceId) {
+            if (!job || !job.salesforce_id) {
                 showAlert('❌ Pas d\'opportunité Salesforce associée', 'error');
                 return;
             }
@@ -2487,7 +2709,12 @@
                                     </div>
                                     <div class="history-date">${date.toLocaleDateString('fr-FR')} à ${date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
                                 </div>
-                                <div class="history-score ${scoreColor}">${matching.score}%</div>
+                                <div class="history-actions">
+                                    <button class="history-cta" onclick="event.stopPropagation(); downloadHistoryReport('${item.id}')">
+                                        ⬇️ Retélécharger le rapport
+                                    </button>
+                                    <div class="history-score ${scoreColor}">${matching.score}%</div>
+                                </div>
                             </div>
                         </div>
                     `;
@@ -2518,6 +2745,11 @@
                                     ${item.filename} ${item.job ? '• ' + item.job.title : '• Analyse seule'}
                                 </div>
                                 <div class="history-date">${date.toLocaleDateString('fr-FR')} à ${date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
+                            </div>
+                            <div class="history-actions">
+                                <button class="history-cta" onclick="event.stopPropagation(); downloadHistoryReport('${item.id}')">
+                                    ⬇️ Retélécharger le rapport
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -2631,6 +2863,13 @@
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
+        }
+
+        function downloadHistoryReport(itemId) {
+            const item = history.find(h => h.id === itemId);
+            if (!item) return;
+            currentAnalysis = item;
+            exportToWord();
         }
 
         function viewHistoryItem(itemId) {
