@@ -244,6 +244,69 @@
             grid-template-columns: 1.2fr 1.2fr 1fr 1.6fr;
         }
 
+        .upload-divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 18px 0;
+            color: var(--gray-500);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .upload-divider::before,
+        .upload-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--gray-200);
+        }
+
+        .analysis-mode {
+            display: grid;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .analysis-option {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid var(--gray-200);
+            background: white;
+        }
+
+        .analysis-option input {
+            margin-top: 3px;
+        }
+
+        .analysis-option-title {
+            font-weight: 700;
+            color: var(--gray-900);
+            font-size: 14px;
+        }
+
+        .analysis-option-desc {
+            color: var(--gray-600);
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        .form-hint {
+            color: var(--gray-500);
+            font-size: 12px;
+            margin-top: 6px;
+        }
+
+        .download-choice {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
         .tracking-filters {
             display: grid;
             grid-template-columns: 1.5fr 1.2fr;
@@ -1376,6 +1439,14 @@
                         <div id="fileName"></div>
                     </div>
                     <input type="file" id="cvFile" accept=".pdf,.doc,.docx,.txt" style="display: none;" onchange="handleFileSelect(event)">
+
+                    <div class="upload-divider">ou</div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>URL du CV</label>
+                        <input type="text" id="cvUrl" placeholder="Ex: https://jobboard.com/cv.pdf">
+                        <div class="form-hint">Assurez-vous que l'URL pointe vers un fichier téléchargeable (PDF/Word/TXT).</div>
+                    </div>
                 </div>
 
                 <div class="card">
@@ -1383,17 +1454,40 @@
                         <div class="card-icon">🎯</div>
                         Options d'analyse
                     </h2>
-                    
-                    <div class="form-group">
-                        <label>Comparer avec une offre d'emploi (optionnel)</label>
+
+                    <div class="analysis-mode">
+                        <label class="analysis-option">
+                            <input type="radio" name="analysisMode" value="match" checked onchange="setAnalysisMode(this.value)">
+                            <div>
+                                <div class="analysis-option-title">Comparer avec une offre d'emploi</div>
+                                <div class="analysis-option-desc">Score de compatibilité et analyse détaillée.</div>
+                            </div>
+                        </label>
+                        <label class="analysis-option">
+                            <input type="radio" name="analysisMode" value="individual" onchange="setAnalysisMode(this.value)">
+                            <div>
+                                <div class="analysis-option-title">Analyse individuelle</div>
+                                <div class="analysis-option-desc">Fiche synthétique exportable en PDF ou Word.</div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="form-group" id="jobSelectGroup">
+                        <label>Choisir une offre d'emploi</label>
                         <select id="jobSelect">
-                            <option value="">Analyse seule (sans offre)</option>
+                            <option value="">Sélectionner une offre</option>
                         </select>
                     </div>
 
                     <div class="form-group">
-                        <label>URL du CV (optionnel)</label>
-                        <input type="text" id="cvUrl" placeholder="Ex: https://jobboard.com/cv.pdf">
+                        <label>Format de téléchargement</label>
+                        <div class="download-choice">
+                            <select id="downloadFormat">
+                                <option value="word">Word</option>
+                                <option value="pdf">PDF</option>
+                            </select>
+                            <button class="secondary-btn" onclick="downloadCurrentReport()">⬇️ Télécharger</button>
+                        </div>
                     </div>
 
                     <button onclick="analyzeCV()">
@@ -1638,6 +1732,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/7.8.2/docx.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         const SUPABASE_URL = 'https://qjgzxuorqeyzrxxpkzxi.supabase.co';
@@ -2346,6 +2441,30 @@
             progressText.textContent = text;
         }
 
+        function getSelectedAnalysisMode() {
+            const selected = document.querySelector('input[name="analysisMode"]:checked');
+            return selected ? selected.value : 'match';
+        }
+
+        function setAnalysisMode(mode) {
+            const jobGroup = document.getElementById('jobSelectGroup');
+            if (!jobGroup) return;
+            jobGroup.style.display = mode === 'match' ? 'block' : 'none';
+        }
+
+        function downloadCurrentReport() {
+            if (!currentAnalysis) {
+                showAlert('⚠️ Aucune analyse à télécharger', 'error');
+                return;
+            }
+            const format = document.getElementById('downloadFormat')?.value || 'word';
+            if (format === 'pdf') {
+                exportToPdf();
+            } else {
+                exportToWord();
+            }
+        }
+
         async function analyzeCV() {
             const fileInput = document.getElementById('cvFile');
             const jobSelect = document.getElementById('jobSelect');
@@ -2357,8 +2476,14 @@
                 return;
             }
 
+            const analysisMode = getSelectedAnalysisMode();
             const selectedJobId = jobSelect.value;
-            const selectedJob = selectedJobId ? jobs.find(j => j.id === selectedJobId) : null;
+            const selectedJob = analysisMode === 'match' && selectedJobId ? jobs.find(j => j.id === selectedJobId) : null;
+
+            if (analysisMode === 'match' && !selectedJob) {
+                showAlert('⚠️ Veuillez sélectionner une offre d\'emploi pour le matching', 'error');
+                return;
+            }
 
             document.getElementById('resultCard').style.display = 'block';
             document.getElementById('loading').style.display = 'block';
@@ -2370,6 +2495,9 @@
 
                 let response;
                 if (urlValue) {
+                    if (window.location.protocol === 'file:') {
+                        throw new Error('L\'analyse d\'URL nécessite d\'ouvrir l\'app depuis son URL hébergée.');
+                    }
                     response = await fetch('/api/analyze-url', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -2442,7 +2570,11 @@
 
             } catch (error) {
                 document.getElementById('loading').style.display = 'none';
-                showAlert(`❌ Erreur: ${error.message}`, 'error');
+                let message = error.message || 'Erreur inconnue';
+                if (message.includes('Failed to fetch')) {
+                    message = 'Impossible de récupérer l\'URL. Vérifiez que le lien est public, téléchargeable et sans authentification.';
+                }
+                showAlert(`❌ Erreur: ${message}`, 'error');
                 console.error(error);
             }
         }
@@ -2552,9 +2684,15 @@
                 </div>
 
                 <div class="button-group">
-                    <button class="export-btn" onclick="exportToWord()">
-                        📥 Exporter en Word
-                    </button>
+                    <div class="download-choice">
+                        <select id="resultDownloadFormat">
+                            <option value="word">Word</option>
+                            <option value="pdf">PDF</option>
+                        </select>
+                        <button class="export-btn" onclick="downloadResult()">
+                            📥 Télécharger
+                        </button>
+                    </div>
             `;
 
             if (salesforceConfig.token && job && job.salesforce_id) {
@@ -2630,6 +2768,85 @@
                 showAlert('✅ Fiche candidat exportée avec succès!', 'success');
             } catch (error) {
                 showAlert(`❌ Erreur lors de l'export: ${error.message}`, 'error');
+            }
+        }
+
+        async function exportToPdf() {
+            if (!currentAnalysis) return;
+            if (!window.jspdf?.jsPDF) {
+                showAlert('❌ Export PDF indisponible', 'error');
+                return;
+            }
+
+            const { result, job } = currentAnalysis;
+            const candidate = result.candidate;
+            const matching = result.matching;
+
+            const doc = new window.jspdf.jsPDF();
+            let y = 14;
+            const lineHeight = 6;
+
+            const addLine = (text) => {
+                const lines = doc.splitTextToSize(text, 180);
+                lines.forEach(line => {
+                    doc.text(line, 10, y);
+                    y += lineHeight;
+                    if (y > 280) {
+                        doc.addPage();
+                        y = 14;
+                    }
+                });
+            };
+
+            addLine('FICHE CANDIDAT - TALENTTRACE');
+            addLine(`${candidate.firstName} ${candidate.lastName}`);
+            addLine(`Email: ${candidate.email || 'Non fourni'}`);
+            addLine(`Téléphone: ${candidate.phone || 'Non fourni'}`);
+            addLine(`Localisation: ${candidate.location || 'Non spécifiée'}`);
+            addLine(' ');
+
+            if (matching && job) {
+                addLine(`MATCHING AVEC: ${job.title}`);
+                addLine(`Score: ${matching.score}%`);
+                addLine('Points forts:');
+                addLine(matching.strengths.map(s => '- ' + s).join('\n'));
+                addLine('Axes d\'amélioration:');
+                addLine(matching.improvements.map(i => '- ' + i).join('\n'));
+                addLine(`Analyse: ${matching.analysis}`);
+                addLine(' ');
+            } else if (result.summary) {
+                addLine('RÉSUMÉ PROFESSIONNEL:');
+                addLine(result.summary);
+                addLine(' ');
+            }
+
+            addLine('COMPÉTENCES:');
+            addLine(candidate.skills.join(', '));
+            addLine(' ');
+
+            addLine('EXPÉRIENCE PROFESSIONNELLE:');
+            candidate.experience.forEach(exp => {
+                addLine(`${exp.title} - ${exp.company} (${exp.duration})`);
+                addLine(exp.summary);
+                addLine(' ');
+            });
+
+            addLine('FORMATION:');
+            candidate.education.forEach(edu => {
+                addLine(`${edu.degree} - ${edu.school}`);
+            });
+
+            const fileName = `${candidate.firstName}_${candidate.lastName}_${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(fileName);
+            showAlert('✅ Fiche candidat exportée en PDF', 'success');
+        }
+
+        function downloadResult() {
+            const format = document.getElementById('resultDownloadFormat')?.value || 'word';
+            if (format === 'pdf') {
+                exportToPdf();
+            } else {
+                exportToWord();
             }
         }
 
@@ -2908,6 +3125,7 @@
         }
 
         // Initialize on load
+        setAnalysisMode(getSelectedAnalysisMode());
         loadData();
     </script>
 </body>
