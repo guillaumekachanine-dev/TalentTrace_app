@@ -1414,19 +1414,19 @@
 
         <div class="tabs">
             <button class="tab-button active" id="job-tab" onclick="switchTab('job-tab')">
-                📝 Offres d'emploi
+                Offres d'emploi
             </button>
             <button class="tab-button" id="cv-tab" onclick="switchTab('cv-tab')">
-                📄 Analyser un CV
+                Analyser un CV
             </button>
             <button class="tab-button" id="tracking-tab" onclick="switchTab('tracking-tab')">
-                📌 Suivi
+                Suivi
             </button>
             <button class="tab-button" id="history-tab" onclick="switchTab('history-tab')">
-                📚 Historique
+                Historique
             </button>
             <button class="tab-button" id="settings-tab" onclick="switchTab('settings-tab')">
-                ⚙️ Salesforce
+                Salesforce
             </button>
         </div>
 
@@ -1614,7 +1614,7 @@
             <div class="card">
                 <h2>
                     <div class="card-icon">📌</div>
-                    Suivi des candidats positionnés
+                    Suivi des positionnements
                     <a class="link-btn" onclick="exportTrackingCsv()" style="margin-left: auto; cursor: pointer;">
                         ⬇️ Exporter CSV
                     </a>
@@ -2565,6 +2565,42 @@
             }
         }
 
+        function addCurrentToTracking() {
+            if (!currentAnalysis || !currentAnalysis.result?.candidate) {
+                showAlert('⚠️ Aucune analyse disponible', 'error');
+                return;
+            }
+
+            const existing = tracking.find(item => item.candidateId === currentAnalysis.id);
+            if (existing) {
+                showAlert('Ce candidat est déjà dans le suivi', 'error');
+                return;
+            }
+
+            const candidate = currentAnalysis.result.candidate;
+            const job = currentAnalysis.job;
+            const matchingScore = currentAnalysis.result?.matching?.score ?? null;
+
+            const trackingItem = {
+                id: Date.now().toString(),
+                candidateId: currentAnalysis.id,
+                candidateName: `${candidate.firstName} ${candidate.lastName}`,
+                jobId: job ? job.id : null,
+                jobTitle: job ? job.title : '',
+                score: matchingScore,
+                status: 'CV sent',
+                comment: '',
+                createdat: new Date().toISOString()
+            };
+
+            tracking.unshift(trackingItem);
+            saveData();
+            updateTrackingList();
+            updateSalesforceReport();
+            updateTrackingSelects();
+            showAlert('✅ Candidat positionné dans le suivi', 'success');
+        }
+
         async function analyzeCV() {
             const fileInput = document.getElementById('cvFile');
             const jobSelect = document.getElementById('jobSelect');
@@ -2793,6 +2829,9 @@
                             📥 Télécharger
                         </button>
                     </div>
+                    <button class="secondary-btn" onclick="addCurrentToTracking()">
+                        Positionner le candidat
+                    </button>
             `;
 
             if (salesforceConfig.token && job && job.salesforce_id) {
